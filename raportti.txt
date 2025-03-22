@@ -1,0 +1,85 @@
+# Diffpriv-menetlemän käytön testaaminen laajemmalla aineistolla
+
+# Aineiston kuvaus: https://research.fi/en/results/dataset/7586f24f-c91b-41df-92af-283524de8b3e
+Aineiston lataus: https://etsin.fairdata.fi/dataset/7586f24f-c91b-41df-92af-283524de8b3e/data -> part_1.xz
+- Aineisto sisältää 9.0G dataa csv-muodossa: timestamp;id;dlc;data
+Esimerkkirivi: 2020-11-23 08:03:31.985194;0xcf003e6;8;255;255;255;255;255;255;255;255
+
+Ilman sen tarkempaa datan analyysia, oletetaan id-kentän olevan CanID, ja 8 data-kentän olevan 8 tavua dataa.
+
+# Datan käsittely:
+## purku
+gzip -d part_1.tar.xz 
+tar -xvf part_1.tar
+
+## 2800 yksittäisen tiedoston yhdistäminen yhdeksi. Samalla poistetaan timestamp ja dlc-kentät tilan säästämiseksi
+Datassa ei ollut yksittäistä ajokertaa, vaan useita eri kertoja. Koska tavoitteena oli kokeilla diffpriv-menetelmää eikä tutkia oikeaa dataa, yksittäisten signaalien järjestyksellä ei ollut merkitystä.
+
+% echo "id;data" > yhdistetty_data.csv && for file in part_1/*.csv; do cut -d ';' -f 2,4- $file | grep -v "id;data" >> yhdistetty_data.csv; done
+
+Lopputuloksena 5.1G ja 140002801 riviä CAN-dataa.
+
+# Tilastointi - ecujen määrä:
+% cut -d ';' -f1 yhdistetty_data.csv |sort| uniq -c| sort -g > tilastot_ecut; date
+Datassa on yhteensä 70 ecua. Erot signaalitiheydessä suuria, 55-16562028 signaalia.
+
+# Tarkastellaan kolmen isoimman ecun datan varianssia
+Katsotaan, montako uniikkia riviä ecuilla on. Jos uniikkeja rivejä on vähän, ecu lähettää luultavasti binääristä dataa ("ovi auki/ovi kiinni"). Jos taas rivejä on paljon, kyseessä voi olla esim. kaasupoljin.
+
+% grep 0x10ff80e6 yhdistetty_data.csv | cut -d ';' -f 2-|sort|uniq -c|wc -l
+    2636
+% grep 0x18f009e6 yhdistetty_data.csv | cut -d ';' -f 2-|sort|uniq -c|wc -l
+ 7396042
+% grep 0xcf002e6 yhdistetty_data.csv | cut -d ';' -f 2-|sort|uniq -c|wc -l
+ 2385850
+
+Jatkoon valikoitui ecu 0x18f009e6. Otetaan sen data:
+% grep 0x18f009e6 yhdistetty_data.csv | cut -d ';' -f 2- > ecu_0x18f009e6.csv
+
+vertailun vuoksi: tässä tiedostossa on noin 10x enemmän dataa kuin Canbus ryhmä 1:n esimerkkidatan suurimassa ecussa SPEED
+
+Ison ecun lisäksi analysoidaan yksi vähän signaaleja sisältävä ecu:
+%  grep 0x18feeee6 yhdistetty_data.csv | cut -d ';' -f 2-|sort|uniq -c|wc -l
+   14105
+grep 0x18feeee6 yhdistetty_data.csv | cut -d ';' -f 2- >> ecu_0x18feeee6.csv
+
+# Analysoidaan
+Datan mukana ei tullut .dbc-tiedostoa, joten ei ole tiedossa mitä signaaleja kyseisellä id:llä on.
+Oletetaan, että koko 8 tavua on yksi signaali. Luultavasti signaaleita on useampia, joten tämä on yksinkertaistus
+
+
+# Tuloksia:
+## ECU: 0x18f009e6 (yleisin, isoin varianssi)
+% python3 diffpriv_stats_analyser.py ecu_0x18f009e6.csv
+Analysed lines: 16562028
+Min Value: 93555414886481663
+Max Value: 18446744073709551615
+5% Quantile: 1.1161545722999008e+18
+95% Quantile: 1.7689119519911936e+19
+Median: 9.474835240196735e+18
+Mean: 9.349862491229274e+18
+DP Mean (e 0.1): 9.352917061437444e+18
+DP Mean (e 1.0): 9.352925851408073e+18
+DP Mean (e 2.0): 9.352925414515677e+18
+Standard Deviation: 5.217786601677381e+18
+DP Stantard deviation (e 0.1): 5.217849320707503e+18
+DP Stantard deviation (e 1.0): 5.217786555352852e+18
+DP Stantard deviation (e 2.0): 5.217786482626456e+18
+
+## ECU: 0x18feeee6 (harvinaisempi, vähäisempi varianssi)
+
+% python3 diffpriv_stats_analyser.py ecu_0x18feeee6.csv
+Analysed lines: 165627
+Min Value: 3098278781861756927
+Max Value: 18446744073709551615
+5% Quantile: 6.124841785946328e+18
+95% Quantile: 8.862975416877449e+18
+Median: 8.718816248336482e+18
+Mean: 8.426890580276174e+18
+DP Mean (e 0.1): 8.399620912215364e+18
+DP Mean (e 1.0): 8.399568475288704e+18
+DP Mean (e 2.0): 8.399598749915202e+18
+Standard Deviation: 1.242497690380056e+18
+DP Stantard deviation (e 0.1): 1.263225490046899e+18
+DP Stantard deviation (e 1.0): 1.2420992031514455e+18
+DP Stantard deviation (e 2.0): 1.2421028017932e+18
