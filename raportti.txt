@@ -49,6 +49,9 @@ Oletetaan, että koko 8 tavua on yksi signaali. Luultavasti signaaleita on useam
 
 
 # Tuloksia:
+
+Analyysikoodi lukee tiedot ja laskee niille tilastollisia arvoja. Koska DP-arvot vaihtelevat jokaisella ajokerralla, on tilastointiin otettu tiedot 100 ajosta.
+
 ## ECU: 0x18f009e6 (yleisin, isoin varianssi)
 % python3 diffpriv_stats_analyser.py ecu_0x18f009e6.csv
 Analysed lines: 16562028
@@ -58,13 +61,11 @@ Max Value: 18446744073709551615
 95% Quantile: 1.7689119519911936e+19
 Median: 9.474835240196735e+18
 Mean: 9.349862491229274e+18
-DP Mean (e 0.1): 9.352917061437444e+18
-DP Mean (e 1.0): 9.352925851408073e+18
-DP Mean (e 2.0): 9.352925414515677e+18
-Standard Deviation: 5.217786601677381e+18
-DP Stantard deviation (e 0.1): 5.217849320707503e+18
-DP Stantard deviation (e 1.0): 5.217786555352852e+18
-DP Stantard deviation (e 2.0): 5.217786482626456e+18
+Standard deviation: 5.217786601677381e+18
+DP values after 100 runs
+DP epsilon 0.1: min 9.35290100259031e+18, mean 9.352926335492356e+18, max 9.352976604276054e+18, mean of standard deviations: 5.217780444741604e+18
+DP epsilon 1.0: min 9.352921921359995e+18, mean 9.35292549970783e+18, max 9.352929497419018e+18, mean of standard deviations: 5.217786683705429e+18
+DP epsilon 2.0: min 9.352924020959724e+18, mean 9.352925493743417e+18, max 9.352928715454343e+18, mean of standard deviations: 5.217786480392091e+18
 
 ## ECU: 0x18feeee6 (harvinaisempi, vähäisempi varianssi)
 
@@ -76,10 +77,61 @@ Max Value: 18446744073709551615
 95% Quantile: 8.862975416877449e+18
 Median: 8.718816248336482e+18
 Mean: 8.426890580276174e+18
-DP Mean (e 0.1): 8.399620912215364e+18
-DP Mean (e 1.0): 8.399568475288704e+18
-DP Mean (e 2.0): 8.399598749915202e+18
-Standard Deviation: 1.242497690380056e+18
-DP Stantard deviation (e 0.1): 1.263225490046899e+18
-DP Stantard deviation (e 1.0): 1.2420992031514455e+18
-DP Stantard deviation (e 2.0): 1.2421028017932e+18
+Standard deviation: 1.242497690380056e+18
+DP values after 100 runs
+DP epsilon 0.1: min 8.398289117289312e+18, mean 8.399528861414899e+18, max 8.400314468398462e+18, mean of standard deviations: 1.2434162673649787e+18
+DP epsilon 1.0: min 8.399523483659639e+18, mean 8.399580378116396e+18, max 8.399657043139352e+18, mean of standard deviations: 1.24259573412462e+18
+DP epsilon 2.0: min 8.399543208171341e+18, mean 8.399581508944004e+18, max 8.399624465940784e+18, mean of standard deviations: 1.242481013866662e+18
+
+### Rivimäärän vaikutus ajoon
+
+Tiedostosta ecu_0x18feeee6.csv on poimittu joka X:s rivi seuraavalla menetelmällä:
+% awk 'NR % 1000 == 0' ecu_0x18feeee6.csv| > ecu_0x18feeee6_16_lines.csv
+% awk 'NR % 100 == 0' ecu_0x18feeee6.csv| > ecu_0x18feeee6_165_lines.csv
+% awk 'NR % 10 == 0' ecu_0x18feeee6.csv| > ecu_0x18feeee6_16562_lines.csv
+
+
+% python3 diffpriv_stats_analyser.py ecu_0x18feeee6_16_lines.csv
+Analysed lines: 16
+Min Value: 7781976253493411839
+Max Value: 8934920860729343999
+5% Quantile: 8.214471901058171e+18
+95% Quantile: 8.880960125351756e+18
+Median: 8.754882426603307e+18
+Mean: 8.669287575342547e+18
+Standard deviation: 2.7049461733620147e+17
+DP values after 100 runs
+DP epsilon 0.1: min 8.214471901058171e+18, mean 8.614832962365972e+18, max 8.880960125351756e+18, mean of standard deviations: 3.655371101237661e+17
+DP epsilon 1.0: min 8.488760540206938e+18, mean 8.704036942172269e+18, max 8.875719641365331e+18, mean of standard deviations: 3.07690628872431e+17
+DP epsilon 2.0: min 8.594390656363396e+18, mean 8.692093063336409e+18, max 8.766324111690385e+18, mean of standard deviations: 2.906175034415695e+17
+
+
+% python3 diffpriv_stats_analyser.py ecu_0x18feeee6_165_lines.csv
+Analysed lines: 165
+Min Value: 4755783773230989311
+Max Value: 8934920860729343999
+5% Quantile: 6.427424095535838e+18
+95% Quantile: 8.862838637630953e+18
+Median: 8.718814049313227e+18
+Mean: 8.396095159309681e+18
+Standard deviation: 7.889659360076154e+17
+DP values after 100 runs
+DP epsilon 0.1: min 7.775660535867824e+18, mean 8.43982848309932e+18, max 8.862838637630953e+18, mean of standard deviations: 1.0914446900134028e+18
+DP epsilon 1.0: min 8.386182252752375e+18, mean 8.437156133206543e+18, max 8.483556251399345e+18, mean of standard deviations: 7.757581309789166e+17
+DP epsilon 2.0: min 8.409257613593663e+18, mean 8.437737341508892e+18, max 8.477742303757066e+18, mean of standard deviations: 7.73925892791795e+17
+
+
+% python3 diffpriv_stats_analyser.py ecu_0x18feeee6_1656_lines.csv
+Analysed lines: 1656
+Min Value: 3530718904089313279
+Max Value: 18446744073709551615
+5% Quantile: 6.19676991979153e+18
+95% Quantile: 8.862982009652249e+18
+Median: 8.718804705611874e+18
+Mean: 8.439429026400778e+18
+Standard deviation: 1.270758750156279e+18
+DP values after 100 runs
+DP epsilon 0.1: min 8.35598393572659e+18, mean 8.40632054093774e+18, max 8.471746926741193e+18, mean of standard deviations: 1.578258197703334e+18
+DP epsilon 1.0: min 8.399347764621969e+18, mean 8.40470754576143e+18, max 8.41177647503519e+18, mean of standard deviations: 1.2646968078799483e+18
+DP epsilon 2.0: min 8.401898985188914e+18, mean 8.404594184979795e+18, max 8.407717411740292e+18, mean of standard deviations: 1.2754812052648067e+18
+
