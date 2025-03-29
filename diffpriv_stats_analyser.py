@@ -5,9 +5,6 @@ from diffprivlib.tools import quantile, mean, std
 
 import warnings
 
-
-
-
 def dp_stats(numbers, lower_bound, upper_bound, epsilon):
     dp_mean = mean(numbers, epsilon=epsilon, bounds=(lower_bound, upper_bound))
     dp_std = std(numbers, epsilon=epsilon)
@@ -43,10 +40,20 @@ quantile_5 = np.percentile(numbers, 5)
 quantile_95 = np.percentile(numbers, 95)
 
 # print("Running DP calculations")
-dp_mean_10, dp_std_10 = dp_stats(numbers, quantile_5, quantile_95, 1.0)
-dp_mean_01, dp_std_01 = dp_stats(numbers, quantile_5, quantile_95, 0.1)
-dp_mean_20, dp_std_20 = dp_stats(numbers, quantile_5, quantile_95, 2.0)
+import numpy as np
 
+epsilons = [0.1, 1.0, 2.0]
+
+dp_means = {eps: [] for eps in epsilons}
+dp_stds = {eps: [] for eps in epsilons}
+
+# Run dp_stats x times for each epsilon
+run_count = 100
+for epsilon in epsilons:
+    for _ in range(run_count):
+        dp_mean, dp_std = dp_stats(numbers, quantile_5, quantile_95, epsilon)
+        dp_means[epsilon].append(dp_mean)
+        dp_stds[epsilon].append(dp_std)
 
 # Print results
 print(f"Analysed lines: {len(numbers)}")
@@ -56,11 +63,10 @@ print(f"5% Quantile: {quantile_5}")
 print(f"95% Quantile: {quantile_95}")
 print(f"Median: {median_value}")
 print(f"Mean: {mean_value}")
-print(f"DP Mean (e 0.1): {dp_mean_01}")
-print(f"DP Mean (e 1.0): {dp_mean_10}")
-print(f"DP Mean (e 2.0): {dp_mean_20}")
-print(f"Standard Deviation: {std_dev}")
-print(f"DP Stantard deviation (e 0.1): {dp_std_01}")
-print(f"DP Stantard deviation (e 1.0): {dp_std_10}")
-print(f"DP Stantard deviation (e 2.0): {dp_std_20}")
+print(f"Standard deviation: {std_dev}")
+
+print(f"DP values after {run_count} runs")
+for epsilon in epsilons:
+    print(f"DP epsilon {epsilon}: min {np.min(dp_means[epsilon])}, mean {np.mean(dp_means[epsilon])}, max {np.max(dp_means[epsilon])}, mean of standard deviations: {np.mean(dp_stds[epsilon])}")
+
 
